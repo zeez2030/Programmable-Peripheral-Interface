@@ -16,7 +16,7 @@ assign address = {a1,a0};
 
 // 3) reset
 wire int_reset;
-assign int_reset = reset | (~wrb & (address == 2'b11));
+assign int_reset = reset | (cwr[7]==0) | (~wrb & (address == 2'b11));
 
 // 4) latching of data and ports
 reg [7:0] latch_data, latch_portA, latch_portB, latch_portC;
@@ -35,8 +35,8 @@ reg enable_portA, enable_portB, enable_upper_portC, enable_lower_portC;
 reg groupA_mode0, groupB_mode0;
 
 // 8) bit set/reset
-reg [2:0] pin_selected;
-reg bit_set; 
+//reg [2:0] pin_selected;
+//reg bit_set; 
 
 // different modes of operations
 // 1] mode 0 i/o
@@ -144,6 +144,7 @@ else enable_lower_portC = 0;
 end
 end
 
+/*
 else
 //for bit set/reset
 begin
@@ -151,6 +152,7 @@ pin_selected = {cwr[3],cwr[2],cwr[1]};
 bit_set = cwr[0];
 out_portC[pin_selected]=bit_set;
 end
+*/
 
 end
 end
@@ -235,6 +237,161 @@ end
 
 end
 
+endmodule
 
+
+
+module ppi_testbench1();
+
+wire[7:0] pA, pB, pC, D;
+wire a1,a0;
+reg rdb, wrb, rst, cs;
+reg [7:0] drive_pA, drive_pB, drive_pC, drive_D, temp_D;
+
+parameter cycle = 100;
+
+assign pA = drive_pA;
+assign pB = drive_pB;
+assign pC = drive_pC;
+assign D = drive_D;
+
+reg [1:0] address;
+assign a1 = address [1];
+assign a0 = address [0];
+
+initial
+begin
+     // for reset
+     drive_pA = 8'hzz;
+     drive_pB = 8'hzz;
+     drive_pC = 8'hzz;
+     rdb = 1;
+     wrb = 1;
+     cs=0;
+     address = 0;
+     drive_D = 8'hzz;
+     rst = 0;
+
+     #cycle;
+
+     task_reset;
+
+     // testing for mode 0 with all portA, portB,
+     // portCU, portCL
+     // input
+
+     temp_D = 8'b10011011;
+     CWR_write(temp_D);
+     drive_D = 8'hzz;
+
+     // read from portA
+     address = 0;
+     drive_pA = 8'ha5;
+     read_port;
+     drive_pA = 8'hzz;
+     
+     // read portB
+     address = 1;
+     drive_pB = 8'h35;
+     read_port;
+     drive_pB = 8'hzz;
+
+     // read portC
+     address = 2;
+     drive_pC = 8'h98;
+     read_port;
+     drive_pC = 8'hzz;
+
+    // change portA to output
+    temp_D = 8'b10001011;
+    CWR_write(temp_D);
+    drive_D = 8'hzz;
+
+    // write to portA
+    address = 0;
+    drive_D = 8'hbc;
+    write_port;
+    drive_D = 8'hzz;
+
+    // change portB to output
+    temp_D = 8'b10001001;
+    CWR_write(temp_D);
+    drive_D = 8'hzz;
+
+    // write to portB
+    address = 1;
+    drive_D = 8'h67;
+    write_port;
+    drive_D = 8'hzz;
+
+    // change portC to output
+    temp_D = 8'b10000000;
+    CWR_write(temp_D);
+    drive_D = 8'hzz;
+
+    // write to portC
+    address = 2;
+    drive_D = 8'h32;
+    write_port;
+    drive_D = 8'hzz;
+
+end
+task write_port;
+begin
+     wrb = 1;
+     rdb = 1;
+     #cycle;
+     wrb = 0;
+     #cycle;
+     wrb = 1;
+     #cycle;
+end
+endtask
+
+task read_port;
+begin
+     wrb = 1;
+     rdb = 1;
+     #cycle;
+     rdb = 0;
+     #cycle;
+     rdb = 1;
+     #cycle;
+end
+endtask
+
+task CWR_write;
+input [7:0] temp_D;
+begin
+     rst = 0;
+     address = 2'b11;
+     rdb = 1;
+     wrb = 1;
+     #cycle;
+     drive_D = temp_D;
+     wrb = 0;
+     #cycle;
+     wrb = 1;
+     #cycle;
+end
+endtask
+
+task task_reset;
+begin
+     rst = 0;
+     #cycle;
+     rst = 1;
+     #cycle;
+     rst = 0;
+     #cycle;
+end
+endtask
+
+ppi ppi_instance (.portA(pA), .portB(pB),
+.portC(pC), .rdb(rdb),
+.wrb(wrb), .a1(a1), .a0(a0),
+.reset(rst),
+.data(D), .cs(cs));
 
 endmodule
+
