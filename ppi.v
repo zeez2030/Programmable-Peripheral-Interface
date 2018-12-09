@@ -209,24 +209,24 @@ end
 
 //if port A is addressed and output
 else if (~wrb & groupA_mode0 & enable_portA & (address == 2'b00))
-out_portA = latch_data;
+out_portA <=latch_data;
 
 //if port B is addressed and output
 else if (~wrb & groupB_mode0 & enable_portB & (address == 2'b01))
-out_portB = latch_data;
+out_portB<= latch_data;
 
 //if port C is addressed and output
 else if (~wrb & groupA_mode0 & groupB_mode0 & 
 enable_upper_portC & enable_lower_portC & (address == 2'b10))
-out_portC = latch_data;
+out_portC<= latch_data;
 
 //if port C is addressed and upper pins are output
 else if (~wrb & groupA_mode0 & enable_upper_portC & (address == 2'b10))
-out_portC = {latch_data[7:4],4'hz};
+out_portC<= {latch_data[7:4],4'hz};
 
 //if port C is addressed and lower pins are output
 else if (~wrb & groupB_mode0 & enable_lower_portC & (address == 2'b10))
-out_portC = {4'hz, latch_data[3:0]};
+out_portC<= {4'hz, latch_data[3:0]};
 
 else
 begin
@@ -394,4 +394,3 @@ ppi ppi_instance (.portA(pA), .portB(pB),
 .data(D), .cs(cs));
 
 endmodule
-
